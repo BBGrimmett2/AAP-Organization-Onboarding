@@ -1,0 +1,58 @@
+---
+- name: AAP Organization and Team Provisioning
+  hosts: localhost
+  vars:
+    aap_hostname: "{{ lookup('env', 'AAP_HOSTNAME') }}"
+    aap_validate_certs: "{{ lookup('env', 'AAP_VALIDATE_CERTS') | default(false) | bool }}"
+    aap_username: "{{ lookup('env', 'AAP_USERNAME') }}"
+    aap_password: "{{ lookup('env', 'AAP_PASSWORD') }}"
+  pre_tasks:
+    - name: Assert that org_name, org_full_name, and org_description are defined
+      ansible.builtin.assert:
+        that:
+          - org_name is defined
+          - org_full_name is defined
+          - org_description is defined
+        fail_msg: > 
+          One or more required variables are missing (org_name, org_full_name, org_description)
+  tasks:
+    - name: Template new Organization
+      block:
+        - name: Render the organization template
+          ansible.builtin.template:
+            src: templates/organization.yml.j2
+            dest: /tmp/org_update.yml
+
+        - name: Append new team data
+          ansible.builtin.blockinfile:
+            path: data/aap_organizations.yml
+            marker: "# {mark} {{ org_name }} added {{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+            insertbefore: EOF
+            block: "{{ lookup('file', '/tmp/org_update.yml') }}"
+
+    - name: Template new teams
+      block:
+        - name: Render the team template
+          ansible.builtin.template:
+            src: templates/team.yml.j2
+            dest: /tmp/team_update.yml
+
+        - name: Append new team data
+          ansible.builtin.blockinfile:
+            path: data/aap_teams.yml
+            marker: "# {mark} {{ org_name }} added {{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+            insertbefore: EOF
+            block: "{{ lookup('file', '/tmp/team_update.yml') }}"
+
+    - name: Include data variables
+      include_vars:
+        file: "{{ item }}"
+      loop: "{{ lookup('fileglob', 'data/*', wantlist=True) }}"
+
+    - name: Add organization
+      ansible.builtin.include_role:
+        name: infra.aap_configuration.gateway_organizations
+
+    - name: Add teams
+      ansible.builtin.include_role:
+        name: infra.aap_configuration.gateway_teams

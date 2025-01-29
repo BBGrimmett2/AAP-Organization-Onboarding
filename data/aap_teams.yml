@@ -1,0 +1,10 @@
+---
+aap_teams:
+- name: "Org 1 Leads"
+  organization: "Org 1"
+- name: "Org 1 Devs"
+  organization: "Org 1"
+- name: "Org 2 Leads"
+  organization: "Org 2"
+- name: "Org 2 Devs"
+  organization: "Org 2"
