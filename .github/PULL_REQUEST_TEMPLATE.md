@@ -18,7 +18,8 @@
 ### How Has This Been Tested?
 <!-- Describe the testing process. Include details on how the changes were validated, including any playbook runs or manual verifications. -->
 
-- [ ] Playbook Execution Validated
+- [ ] Playbook Execution Validated CLI
+- [ ] Playbook Execution Validated AAP
 - [ ] Other (please specify):
 
 ## Checklist
