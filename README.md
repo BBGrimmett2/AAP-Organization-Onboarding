@@ -3,6 +3,8 @@
 ## Overview
 This Ansible playbook automates the provisioning of organizations and teams in **Ansible Automation Platform (AAP)**. It generates configuration files from templates, appends data to tracking files, and applies configurations using predefined roles.
 
+This is meant to be a templated and can be adapted to your environment as you see fit.
+
 ## Requirements
 - Ansible installed
 - Required environment variables:
@@ -15,6 +17,7 @@ This Ansible playbook automates the provisioning of organizations and teams in *
   - `org_full_name`
   - `org_description`
 - Collections Requirements
+
 ```yaml
 ---
 collections:
