@@ -27,7 +27,7 @@
           ansible.builtin.blockinfile:
             path: data/aap_organizations.yml
             insertbefore: EOF
-            block: "{{ lookup('file', '/tmp/org_update.yml') | regex_replace('(?m)^', '  ')  }}"
+            block: "{{ lookup('file', '/tmp/org_update.yml') | regex_replace('(?m)^', '  ') }}"
 
     - name: Template new teams
       block:
@@ -40,7 +40,7 @@
           ansible.builtin.blockinfile:
             path: data/aap_teams.yml
             insertbefore: EOF
-            block: "{{ lookup('file', '/tmp/team_update.yml') | regex_replace('(?m)^', '  ')  }}"
+            block: "{{ lookup('file', '/tmp/team_update.yml') | regex_replace('(?m)^', '  ') }}"
 
     - name: Include data variables
       loop: "{{ lookup('fileglob', 'data/*', wantlist=True) }}"
