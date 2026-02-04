@@ -14,12 +14,18 @@
     organization_description: "Linux Operators Organization"
     aap_authenticator: "Starbase IDM"
   pre_tasks:
-    - name: Assert that organization_name, organization_full_name, and organization_description are defined
+    - name: Assert required organization and directory variables are defined
       ansible.builtin.assert:
         that:
+          - ad_group_name_admins is defined
+          - ad_group_name_users is defined
           - organization_name is defined
           - organization_full_name is defined
           - organization_description is defined
+          - aap_authenticator is defined
+        fail_msg: "One or more required variables are not defined."
+        success_msg: "All required organization and directory variables are defined."
+
         fail_msg: >
           One or more required variables are missing
   tasks:
