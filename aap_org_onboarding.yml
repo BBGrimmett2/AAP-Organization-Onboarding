@@ -1,52 +1,96 @@
 ---
 - name: AAP Organization and Team Provisioning
   hosts: localhost
+  gather_facts: false
   vars:
     aap_hostname: "{{ lookup('env', 'AAP_HOSTNAME') }}"
     aap_validate_certs: "{{ lookup('env', 'AAP_VALIDATE_CERTS') | default(false) | bool }}"
     aap_username: "{{ lookup('env', 'AAP_USERNAME') }}"
     aap_password: "{{ lookup('env', 'AAP_PASSWORD') }}"
+    ad_group_name_admins: "cn=linux-admins,cn=groups,cn=accounts,dc=local,dc=starbase,dc=icu"
+    ad_group_name_users: "cn=linux-users,cn=groups,cn=accounts,dc=local,dc=starbase,dc=icu"
+    organization_name: "Linux"
+    organization_full_name: "Linux Organization"
+    organization_description: "Linux Operators Organization"
+    aap_authenticator: "Starbase IDM"
   pre_tasks:
-    - name: Assert that org_name, org_full_name, and org_description are defined
+    - name: Assert that organization_name, organization_full_name, and organization_description are defined
       ansible.builtin.assert:
         that:
-          - org_name is defined
-          - org_full_name is defined
-          - org_description is defined
+          - organization_name is defined
+          - organization_full_name is defined
+          - organization_description is defined
         fail_msg: >
           One or more required variables are missing
   tasks:
-    - name: Template new Organization
+    - name: Use template for onboarding new group
       block:
-        - name: Render the organization template
-          ansible.builtin.template:
-            src: templates/organization.yml.j2
-            dest: /tmp/org_update.yml
-
-        - name: Append new org data
-          ansible.builtin.blockinfile:
-            path: data/aap_organizations.yml
-            insertbefore: EOF
-            block: "{{ lookup('file', '/tmp/org_update.yml') | regex_replace('(?m)^', '  ')  }}"
-
-    - name: Template new teams
-      block:
-        - name: Render the team template
-          ansible.builtin.template:
-            src: templates/team.yml.j2
-            dest: /tmp/team_update.yml
-
-        - name: Append new team data
-          ansible.builtin.blockinfile:
-            path: data/aap_teams.yml
-            insertbefore: EOF
-            block: "{{ lookup('file', '/tmp/team_update.yml') | regex_replace('(?m)^', '  ')  }}"
-
-    - name: Include data variables
-      loop: "{{ lookup('fileglob', 'data/*', wantlist=True) }}"
-      ansible.builtin.include_vars:
-        file: "{{ item }}"
-      when: lookup('file', item) | regex_replace('(?m)^#.*\n?', '') | trim != ''
+        - name: Template new organization
+          ansible.builtin.set_fact:
+            aap_organizations:
+              - name: "{{ organization_name }}"
+                full_name: "{{ organization_full_name }}"
+                description: "{{ organization_description }}"
+        
+        - name: Template new teams
+          ansible.builtin.set_fact:
+            aap_teams:
+              - name: "{{ organization_name }} - Admins"
+                organization: "{{ organization_name }}"
+                description: "Administrators for {{ organization_name }}"
+              - name: "{{ organization_name }} - Users"
+                organization: "{{ organization_name }}"
+                description: "Users for {{ organization_name }}"
+        
+        - name: Template new authenticator mappings
+          ansible.builtin.set_fact:
+            gateway_authenticator_maps:
+              - name: "Org - {{ organization_name }} - Admins"
+                authenticator: "{{ aap_authenticator }}"
+                order: 1
+                revoke: false
+                map_type: organization
+                organization: "{{ organization_name }}"
+                role: Organization Admin
+                triggers:
+                  groups:
+                    has_or:
+                      - "{{ ad_group_name_admins }}"
+              - name: "Org - {{ organization_name }} - Users"
+                authenticator: "{{ aap_authenticator }}"
+                order: 1
+                revoke: false
+                map_type: organization
+                organization: "{{ organization_name }}"
+                role: Organization Member
+                triggers:
+                  groups:
+                    has_or:
+                      - "{{ ad_group_name_users }}"
+              - name: "Team - {{ organization_name }} - Admins"
+                authenticator: "{{ aap_authenticator }}"
+                order: 2
+                revoke: false
+                map_type: team
+                organization: "{{ organization_name }}"
+                team: "{{ ad_group_name_admins }}"
+                role: Team Admin
+                triggers:
+                  groups:
+                    has_or:
+                      - "{{ ad_group_name_admins }}"
+              - name: "Team - {{ organization_name }} - Users"
+                authenticator: "{{ aap_authenticator }}"
+                order: 2
+                revoke: false
+                map_type: team
+                organization: "{{ organization_name }}"
+                team: "{{ ad_group_name_users }}"
+                role: Team Member
+                triggers:
+                  groups:
+                    has_or:
+                      - "{{ ad_group_name_users }}"
 
     - name: Add organization
       ansible.builtin.include_role:
@@ -55,3 +99,7 @@
     - name: Add teams
       ansible.builtin.include_role:
         name: infra.aap_configuration.gateway_teams
+
+    - name: Add Authenticator Mappings
+      ansible.builtin.include_role:
+        name: infra.aap_configuration.gateway_authenticator_maps
