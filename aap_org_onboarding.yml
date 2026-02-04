@@ -26,8 +26,6 @@
         fail_msg: "One or more required variables are not defined."
         success_msg: "All required organization and directory variables are defined."
 
-        fail_msg: >
-          One or more required variables are missing
   tasks:
     - name: Use template for onboarding new group
       block:
